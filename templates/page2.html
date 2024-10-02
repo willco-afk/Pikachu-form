@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backend Demo Page</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0; 
+            overflow: hidden; 
+            position: relative;
+        }
+        .ripple-background {
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: rgba(255, 204, 0, 0.8);
+            overflow: hidden; 
+            z-index: -1; 
+            animation: ripple 5s infinite linear;
+        }
+        @keyframes ripple {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+        .container {
+            text-align: center; 
+            border: 2px solid rgba(255, 165, 0, 1); 
+            border-radius: 10px; 
+            padding: 20px; 
+            background-color: rgba(255, 255, 255, 0.9); 
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2); 
+            position: absolute; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            z-index: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="ripple-background"></div>
+    <div class="container">
+        <h1 class="text-3xl font-bold">Django Pikachu Demo Page</h1>
+        <form id="favorite-form" class="mt-4" onsubmit="saveFavoritePokemon(event)">
+            <input type="text" name="favorite_pokemon" required placeholder="Your Favorite Pokémon" 
+                class="border-2 border-orange-500 p-2 rounded-lg w-full max-w-xs">
+            <button type="submit" class="mt-2 bg-green-500 text-white p-2 rounded-lg">Save Pokémon</button>
+        </form>
+        <div id="favorite-response" class="mt-2"></div>
+        <button class="mt-4 bg-blue-500 text-white p-2 rounded-lg" onclick="showAllPokemon()">Show All Pokémon</button>
+        <div id="all-pokemon" class="mt-2"></div>
+    </div>
+
+    <script>
+        async function saveFavoritePokemon(event) {
+            event.preventDefault(); // Prevent default form submission
+            const favorite = event.target.favorite_pokemon.value; // Get the input value
+            const response = await fetch('/save-favorite/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': getCookie('csrftoken'), // CSRF token for security
+                },
+                body: `favorite_pokemon=${encodeURIComponent(favorite)}`,
+            });
+
+            if (response.ok) {
+                alert("Favorite Pokémon saved successfully!"); // Notify user
+                event.target.reset(); // Clear input field after successful save
+            } else {
+                alert("Failed to save favorite Pokémon."); // Notify on failure
+            }
+        }
+
+        function getCookie(name) {
+            const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+                const [key, value] = cookie.trim().split('=');
+                acc[key] = decodeURIComponent(value);
+                return acc;
+            }, {});
+            return cookies[name] || null;
+        }
+
+        function showAllPokemon() {
+            fetch('/show-all-pokemon/') // Fetch all saved Pokémon
+                .then(response => response.json())
+                .then(data => {
+                    const allFavorites = data.pokemons.join(', ') || 'No favorites saved';
+                    document.getElementById('all-pokemon').innerText = allFavorites; // Display all Pokémon
+                })
+                .catch(error => {
+                    console.error('Error fetching Pokémon:', error);
+                });
+        }
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        const geometry = new THREE.TorusGeometry(1, 0.4, 16, 100);
+        const material = new THREE.MeshBasicMaterial({ color: 0xFFD700 });
+        const shape = new THREE.Mesh(geometry, material);
+        scene.add(shape);
+        camera.position.z = 5;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            shape.rotation.x += 0.01;
+            shape.rotation.y += 0.01;
+            shape.position.y = Math.sin(Date.now() * 0.005) * 3; // Bounce effect
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
+</body>
+</html>
